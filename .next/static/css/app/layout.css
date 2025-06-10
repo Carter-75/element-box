@@ -39,7 +39,12 @@ body {
 
 .selected-element-glow {
   animation: red-orange-glow 2s infinite ease-in-out;
+  background-color: #d35400 !important;
   border-color: #ff8c00 !important;
   color: white !important;
+}
+
+.buttons.overflow-visible {
+  overflow: visible !important;
 }
 

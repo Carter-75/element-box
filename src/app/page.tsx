@@ -8,6 +8,6 @@ const PhysicsCanvas = dynamic(() => import('@/app/components/PhysicsCanvas'), {
 
 export default function Home() {
   return (
-    <PhysicsCanvas />
+      <PhysicsCanvas />
   );
 }

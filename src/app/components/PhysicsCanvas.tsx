@@ -340,13 +340,8 @@ const PhysicsCanvas = () => {
 
     // --- Reset Function ---
     const handleReset = () => {
-        // Clear local storage
-        localStorage.removeItem(UI_STATE_KEY);
-        localStorage.removeItem(SIM_CONTROLS_KEY);
-
-        // Clear world and reload page for a clean slate
+        // Clear only the world grid, not the UI or control settings.
         world.clear();
-        window.location.reload();
     };
 
     // --- Styling ---
@@ -363,6 +358,9 @@ const PhysicsCanvas = () => {
         gap: '20px',
         zIndex: 1000,
         border: '1px solid rgba(255, 255, 255, 0.1)',
+        maxHeight: '70vh',
+        overflowY: 'auto',
+        paddingRight: '15px',
     };
 
     // --- Render ---
@@ -420,37 +418,65 @@ const PhysicsCanvas = () => {
                 {isMenuOpen && (
                     <div ref={menuPanelRef} style={menuPanelStyle}>
                         {/* Element Selection */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
                             <div>
                                 <h3 className="title is-6 has-text-white">Powder</h3>
-                                <div className="buttons">
-                                    <button className={`button is-small ${selectedElement === ELEMENT_TYPE.SAND ? 'is-link' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.SAND)}>Sand</button>
-                                    <button className={`button is-small ${selectedElement === ELEMENT_TYPE.HOT_ASH ? 'is-link' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.HOT_ASH)}>Ash</button>
-                                    <button className={`button is-small ${selectedElement === ELEMENT_TYPE.STONE_ASH ? 'is-link' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.STONE_ASH)}>Stone Ash</button>
+                                <div className="buttons overflow-visible">
+                                    <button className={`button is-small ${selectedElement === ELEMENT_TYPE.SAND ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.SAND)}>Sand</button>
+                                    <button className={`button is-small ${selectedElement === ELEMENT_TYPE.HOT_ASH || selectedElement === ELEMENT_TYPE.ASH ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.HOT_ASH)}>Ash</button>
+                                    <button className={`button is-small ${selectedElement === ELEMENT_TYPE.STONE_ASH ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.STONE_ASH)}>Stone Ash</button>
+                                    <button className={`button is-small ${selectedElement === ELEMENT_TYPE.GUNPOWDER ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.GUNPOWDER)}>Gunpowder</button>
+                                     <button className={`button is-small ${selectedElement === ELEMENT_TYPE.ANTIMATTER ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.ANTIMATTER)}>Antimatter</button>
                                 </div>
                             </div>
                             <div>
                                 <h3 className="title is-6 has-text-white">Liquid</h3>
-                                <div className="buttons">
-                                    <button className={`button is-small ${selectedElement === ELEMENT_TYPE.WATER ? 'is-link' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.WATER)}>Water</button>
-                                    <button className={`button is-small ${selectedElement === ELEMENT_TYPE.LAVA ? 'is-link' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.LAVA)}>Lava</button>
-                                    <button className={`button is-small ${selectedElement === ELEMENT_TYPE.ACID ? 'is-link' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.ACID)}>Acid</button>
+                                <div className="buttons overflow-visible">
+                                    <button className={`button is-small ${selectedElement === ELEMENT_TYPE.WATER ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.WATER)}>Water</button>
+                                    <button className={`button is-small ${selectedElement === ELEMENT_TYPE.LAVA ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.LAVA)}>Lava</button>
+                                    <button className={`button is-small ${selectedElement === ELEMENT_TYPE.ACID ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.ACID)}>Acid</button>
+                                    <button className={`button is-small ${selectedElement === ELEMENT_TYPE.OIL ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.OIL)}>Oil</button>
+                                    <button className={`button is-small ${selectedElement === ELEMENT_TYPE.NITROGEN ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.NITROGEN)}>Nitrogen</button>
+                                    <button className={`button is-small ${selectedElement === ELEMENT_TYPE.GEL ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.GEL)}>Gel</button>
                                 </div>
                             </div>
                             <div>
                                 <h3 className="title is-6 has-text-white">Solid</h3>
-                                <div className="buttons">
-                                    <button className={`button is-small ${selectedElement === ELEMENT_TYPE.WALL ? 'is-link' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.WALL)}>Wall</button>
-                                    <button className={`button is-small ${selectedElement === ELEMENT_TYPE.PLANT ? 'is-link' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.PLANT)}>Plant</button>
+                                <div className="buttons overflow-visible">
+                                    <button className={`button is-small ${selectedElement === ELEMENT_TYPE.WALL ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.WALL)}>Wall</button>
+                                    <button className={`button is-small ${selectedElement === ELEMENT_TYPE.PLANT ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.PLANT)}>Plant</button>
+                                    <button className={`button is-small ${selectedElement === ELEMENT_TYPE.STONE ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.STONE)}>Stone</button>
+                                    <button className={`button is-small ${selectedElement === ELEMENT_TYPE.ICE ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.ICE)}>Ice</button>
+                                    <button className={`button is-small ${selectedElement === ELEMENT_TYPE.FUSE ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.FUSE)}>Fuse</button>
+                                    <button className={`button is-small ${selectedElement === ELEMENT_TYPE.DIAMOND ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.DIAMOND)}>Diamond</button>
                                 </div>
                             </div>
                             <div>
                                 <h3 className="title is-6 has-text-white">Gas</h3>
-                                <div className="buttons">
-                                    <button className={`button is-small ${selectedElement === ELEMENT_TYPE.FIRE ? 'is-link' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.FIRE)}>Fire</button>
-                                    <button className={`button is-small ${selectedElement === ELEMENT_TYPE.SMOKE ? 'is-link' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.SMOKE)}>Smoke</button>
+                                <div className="buttons overflow-visible">
+                                    <button className={`button is-small ${selectedElement === ELEMENT_TYPE.FIRE ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.FIRE)}>Fire</button>
+                                    <button className={`button is-small ${selectedElement === ELEMENT_TYPE.SMOKE ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.SMOKE)}>Smoke</button>
+                                    <button className={`button is-small ${selectedElement === ELEMENT_TYPE.GAS ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.GAS)}>Gas</button>
+                                    <button className={`button is-small ${selectedElement === ELEMENT_TYPE.METHANE ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.METHANE)}>Methane</button>
                                 </div>
                             </div>
+                                     <div>
+                                        <h3 className="title is-6 has-text-white">Spouts</h3>
+                                        <div className="buttons overflow-visible">
+                                            <button className={`button is-small ${selectedElement === ELEMENT_TYPE.WATER_SPOUT ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.WATER_SPOUT)}>Water</button>
+                                            <button className={`button is-small ${selectedElement === ELEMENT_TYPE.LAVA_SPOUT ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.LAVA_SPOUT)}>Lava</button>
+                                            <button className={`button is-small ${selectedElement === ELEMENT_TYPE.FIRE_SPOUT ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.FIRE_SPOUT)}>Fire</button>
+                                            <button className={`button is-small ${selectedElement === ELEMENT_TYPE.SMOKE_SPOUT ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.SMOKE_SPOUT)}>Smoke</button>
+                                        </div>
+                                    </div>
+                                     <div>
+                                        <h3 className="title is-6 has-text-white">Special</h3>
+                                        <div className="buttons overflow-visible">
+                                            <button className={`button is-small ${selectedElement === ELEMENT_TYPE.VIRUS ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.VIRUS)}>Virus</button>
+                                             <button className={`button is-small ${selectedElement === ELEMENT_TYPE.BLACK_HOLE ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.BLACK_HOLE)}>Black Hole</button>
+                                              <button className={`button is-small ${selectedElement === ELEMENT_TYPE.CLONER ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.CLONER)}>Cloner</button>
+                                        </div>
+                                    </div>
                         </div>
                         {/* Controls */}
                         <div>
@@ -470,7 +496,7 @@ const PhysicsCanvas = () => {
                         {/* Actions */}
                         <div className="field is-grouped">
                             <div className="control is-expanded">
-                                <button className={`button is-danger is-outlined is-fullwidth is-small`} onClick={() => setSelectedElement(ELEMENT_TYPE.EMPTY)}>Eraser</button>
+                                <button className={`button is-danger is-outlined is-fullwidth is-small ${selectedElement === ELEMENT_TYPE.EMPTY ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.EMPTY)}>Eraser</button>
                             </div>
                             <div className="control is-expanded">
                                 <button className={`button is-fullwidth is-small ${wallsOn ? 'is-link' : 'is-light'}`} onClick={() => setWallsOn(!wallsOn)}>Walls</button>
