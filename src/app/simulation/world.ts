@@ -42,8 +42,8 @@ export const DENSITIES: Record<ElementType, number> = {
     [ELEMENT_TYPE.HOT_ASH]: 12,
     [ELEMENT_TYPE.SAND]: 15,
     [ELEMENT_TYPE.PLANT]: 20,
-    [ELEMENT_TYPE.STONE_ASH]: 22,
-    [ELEMENT_TYPE.LAVA]: 25,
+    [ELEMENT_TYPE.STONE_ASH]: 25,
+    [ELEMENT_TYPE.LAVA]: 22,
     [ELEMENT_TYPE.STONE]: 30,
     [ELEMENT_TYPE.WALL]: Infinity,
 };
@@ -95,30 +95,59 @@ export const init = (canvasWidth: number, canvasHeight: number, walls: boolean) 
     const newWidth = Math.floor(canvasWidth / CELL_SIZE);
     const newHeight = Math.floor(canvasHeight / CELL_SIZE);
 
-    const savedGrid = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (savedGrid) {
-        try {
-            const parsedGrid = JSON.parse(savedGrid);
-            if (
-                parsedGrid && 
-                parsedGrid.length === newHeight && 
-                parsedGrid[0]?.length === newWidth
-            ) {
-                grid = parsedGrid;
-                height = newHeight;
-                width = newWidth;
-                setWalls(areWallsOn); // Re-apply walls in case state changed
-                return; // Success: Loaded from a valid, matching save
-            }
-        } catch (e) {
-            console.error("Error loading or validating saved grid, creating a new one.", e);
-        }
+    // If grid exists and dimensions are the same, do nothing.
+    if (grid && width === newWidth && height === newHeight) {
+        return;
     }
 
-    // Fallback: No valid save found, create a new world based on window size
+    const oldGrid = grid;
+    const oldWidth = width;
+    const oldHeight = height;
+
+    // Create the new grid, always starting empty
     width = newWidth;
     height = newHeight;
     grid = Array(height).fill(0).map(() => Array(width).fill(ELEMENT_TYPE.EMPTY));
+    
+    // Determine what to fill the new grid with
+    let sourceGrid: ElementType[][] | null = oldGrid;
+
+    // If this is the very first load (oldGrid is null), try localStorage
+    if (!sourceGrid) {
+        const savedGrid = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (savedGrid) {
+            try {
+                sourceGrid = JSON.parse(savedGrid);
+            } catch (e) {
+                console.error("Failed to parse saved grid", e);
+                sourceGrid = null; // Ensure we don't proceed with bad data
+            }
+        }
+    }
+
+    // If we have a grid to copy from (either old in-memory or from storage)
+    if (sourceGrid) {
+        const sourceHeight = sourceGrid.length;
+        const sourceWidth = sourceGrid[0]?.length || 0;
+
+        const startX = Math.floor((newWidth - sourceWidth) / 2);
+        const startY = Math.floor((newHeight - sourceHeight) / 2);
+
+        for (let y = 0; y < sourceHeight; y++) {
+            for (let x = 0; x < sourceWidth; x++) {
+                const newY = y + startY;
+                const newX = x + startX;
+
+                if (newY >= 0 && newY < newHeight && newX >= 0 && newX < newWidth) {
+                    // Ensure the copied element is valid
+                    if (sourceGrid[y]?.[x] !== undefined) {
+                         grid[newY][newX] = sourceGrid[y][x];
+                    }
+                }
+            }
+        }
+    }
+
     setWalls(areWallsOn);
 };
 
@@ -216,10 +245,21 @@ export const update = () => {
                 return; // Skip movement this frame to simulate slower flow
             }
 
-            // Down
+            // Down - Check below the particle
             const below = grid[y + 1]?.[x];
             if (below !== undefined && density > DENSITIES[below]) {
-                move(x, y, x, y + 1); updatedPositions.add(`${x},${y+1}`); return;
+                // Before swapping up, check if the particle below has stable ground.
+                // This prevents light particles from rising through falling streams.
+                if (DENSITIES[element] < DENSITIES[below]) {
+                    const belowNext = grid[y + 2]?.[x];
+                    if (belowNext !== undefined && DENSITIES[below] > DENSITIES[belowNext]) {
+                        // The particle below is also falling, so don't swap up.
+                        return;
+                    }
+                }
+                move(x, y, x, y + 1); 
+                updatedPositions.add(`${x},${y+1}`); 
+                return;
             }
 
             // Diagonal Down
@@ -244,6 +284,18 @@ export const update = () => {
         // This code only runs if the particle did not move in the movement phase.
         switch(element) {
             case ELEMENT_TYPE.LAVA:
+                // Check for water interaction first, as it's a specific transformation
+                for (let i = -1; i <= 1; i++) {
+                    for (let j = -1; j <= 1; j++) {
+                        if (i === 0 && j === 0) continue;
+                        if (is(x + i, y + j, ELEMENT_TYPE.WATER)) {
+                            set(x, y, ELEMENT_TYPE.STONE_ASH); // Lava becomes stone ash
+                            set(x + i, y + j, ELEMENT_TYPE.SMOKE); // Water becomes smoke
+                            return; // End turn
+                        }
+                    }
+                }
+                // Fallthrough to general acid/lava interaction if no water is found
             case ELEMENT_TYPE.ACID:
                 for (let i = -1; i <= 1; i++) {
                     for (let j = -1; j <= 1; j++) {
@@ -335,9 +387,32 @@ export const update = () => {
                 }
                 break;
             case ELEMENT_TYPE.STONE_ASH:
+                // Chance to melt if touching lava
+                for (let i = -1; i <= 1; i++) {
+                    for (let j = -1; j <= 1; j++) {
+                        if (i === 0 && j === 0) continue;
+                        if (is(x + i, y + j, ELEMENT_TYPE.LAVA) && Math.random() < 0.002) {
+                            set(x, y, ELEMENT_TYPE.LAVA);
+                            return;
+                        }
+                    }
+                }
+                // Harden into stone if stable
                 const isStable = (DENSITIES[grid[y+1]?.[x]] >= DENSITIES[ELEMENT_TYPE.STONE_ASH]);
-                if (isStable && Math.random() < 0.01) {
+                if (isStable && Math.random() < 0.005) {
                     set(x, y, ELEMENT_TYPE.STONE);
+                }
+                break;
+            case ELEMENT_TYPE.STONE:
+                // Chance to melt if touching lava (very small chance)
+                for (let i = -1; i <= 1; i++) {
+                    for (let j = -1; j <= 1; j++) {
+                        if (i === 0 && j === 0) continue;
+                        if (is(x + i, y + j, ELEMENT_TYPE.LAVA) && Math.random() < 0.0005) {
+                            set(x, y, ELEMENT_TYPE.LAVA);
+                            return;
+                        }
+                    }
                 }
                 break;
             case ELEMENT_TYPE.PLANT:
