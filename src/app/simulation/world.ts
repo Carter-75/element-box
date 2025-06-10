@@ -90,29 +90,41 @@ export const clear = () => {
     localStorage.removeItem(LOCAL_STORAGE_KEY);
 };
 
-export const init = (canvasWidth: number, canvasHeight: number) => {
-    width = Math.floor(canvasWidth / CELL_SIZE);
-    height = Math.floor(canvasHeight / CELL_SIZE);
+export const init = (canvasWidth: number, canvasHeight: number, walls: boolean) => {
+    areWallsOn = walls;
+    const newWidth = Math.floor(canvasWidth / CELL_SIZE);
+    const newHeight = Math.floor(canvasHeight / CELL_SIZE);
 
     const savedGrid = localStorage.getItem(LOCAL_STORAGE_KEY);
-    
     if (savedGrid) {
         try {
             const parsedGrid = JSON.parse(savedGrid);
-            if (parsedGrid && parsedGrid.length === height && parsedGrid[0].length === width) {
+            if (
+                parsedGrid && 
+                parsedGrid.length === newHeight && 
+                parsedGrid[0]?.length === newWidth
+            ) {
                 grid = parsedGrid;
-                return;
+                height = newHeight;
+                width = newWidth;
+                setWalls(areWallsOn); // Re-apply walls in case state changed
+                return; // Success: Loaded from a valid, matching save
             }
         } catch (e) {
-            console.error("Failed to parse saved grid:", e);
+            console.error("Error loading or validating saved grid, creating a new one.", e);
         }
     }
 
+    // Fallback: No valid save found, create a new world based on window size
+    width = newWidth;
+    height = newHeight;
     grid = Array(height).fill(0).map(() => Array(width).fill(ELEMENT_TYPE.EMPTY));
     setWalls(areWallsOn);
 };
 
 export const getGrid = () => grid;
+export const getWidth = () => width;
+export const getHeight = () => height;
 export const getCellSize = () => CELL_SIZE;
 
 export const setElement = (x: number, y: number, elementType: ElementType, brushSize: number) => {
@@ -196,8 +208,13 @@ export const update = () => {
             }
         }
         // Falling Particle Movement (Powders & Liquids)
-        else if (DENSITIES[element] > DENSITIES[ELEMENT_TYPE.EMPTY] && DENSITIES[element] < DENSITIES[ELEMENT_TYPE.WALL]) {
+        else if (DENSITIES[element] > DENSITIES[ELEMENT_TYPE.EMPTY] && DENSITIES[element] < DENSITIES[ELEMENT_TYPE.WALL] && element !== ELEMENT_TYPE.PLANT) {
             const density = DENSITIES[element];
+
+            // Lava is viscous and moves slower
+            if (element === ELEMENT_TYPE.LAVA && Math.random() < 0.5) {
+                return; // Skip movement this frame to simulate slower flow
+            }
 
             // Down
             const below = grid[y + 1]?.[x];
@@ -218,11 +235,8 @@ export const update = () => {
 
             // Sideways (Liquids Only)
             if (element === ELEMENT_TYPE.WATER || element === ELEMENT_TYPE.ACID || element === ELEMENT_TYPE.LAVA) {
-                const isSlow = (element === ELEMENT_TYPE.LAVA && Math.random() < 0.5);
-                if (!isSlow) {
-                    if (isEmpty(x + dir, y)) { move(x, y, x + dir, y); updatedPositions.add(`${x+dir},${y}`); return; }
-                    if (isEmpty(x - dir, y)) { move(x, y, x - dir, y); updatedPositions.add(`${x-dir},${y}`); return; }
-                }
+                if (isEmpty(x + dir, y)) { move(x, y, x + dir, y); updatedPositions.add(`${x+dir},${y}`); return; }
+                if (isEmpty(x - dir, y)) { move(x, y, x - dir, y); updatedPositions.add(`${x-dir},${y}`); return; }
             }
         }
 
@@ -249,7 +263,42 @@ export const update = () => {
                 }
                 break;
             case ELEMENT_TYPE.FIRE:
-                if (Math.random() < 0.05) { set(x, y, ELEMENT_TYPE.HOT_ASH); }
+                // Fire spreads to neighbors
+                for (let i = -1; i <= 1; i++) {
+                    for (let j = -1; j <= 1; j++) {
+                        if (i === 0 && j === 0) continue;
+                        const neighbor = grid[y + j]?.[x + i];
+                        if (neighbor === undefined) continue;
+
+                        // Spread to plants, creating more fire
+                        if (neighbor === ELEMENT_TYPE.PLANT) {
+                            if (Math.random() < 0.3) { // Reduced chance to spread
+                                set(x + i, y + j, ELEMENT_TYPE.FIRE); // The plant becomes fire
+                                
+                                // The original fire has a small chance to be consumed into ash
+                                if (Math.random() < 0.1) {
+                                    set(x, y, ELEMENT_TYPE.ASH);
+                                    return; // End turn for this particle
+                                }
+                            }
+                        }
+                        // Evaporate water
+                        if (neighbor === ELEMENT_TYPE.WATER) {
+                            if (Math.random() < 0.5) { 
+                                set(x + i, y + j, ELEMENT_TYPE.SMOKE);
+                            }
+                        }
+                    }
+                }
+
+                // If fire didn't get consumed, it has a chance to burn out
+                if (Math.random() < 0.05) { // A bit shorter lifespan
+                    if (Math.random() < 0.3) { // 30% chance to become smoke
+                        set(x, y, ELEMENT_TYPE.SMOKE);
+                    } else { // 70% chance to become empty
+                        set(x, y, ELEMENT_TYPE.EMPTY);
+                    }
+                }
                 break;
             case ELEMENT_TYPE.HOT_ASH:
                 if (Math.random() < 0.05) { set(x, y, ELEMENT_TYPE.ASH); break; }
@@ -292,7 +341,8 @@ export const update = () => {
                 }
                 break;
             case ELEMENT_TYPE.PLANT:
-                 if (Math.random() < 0.05) {
+                // Plants are mostly static but can be consumed by fire
+                if (Math.random() < 0.01) {
                     for (let i = -1; i <= 1; i++) {
                         for (let j = -1; j <= 1; j++) {
                             if (is(x + i, y + j, ELEMENT_TYPE.WATER)) {
