@@ -18,7 +18,9 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <HeaderAd />
-        {children}
+        <main style={{ flex: 1, position: 'relative' }}>
+          {children}
+        </main>
         <PopupAd />
       </body>
     </html>

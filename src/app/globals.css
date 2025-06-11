@@ -1,11 +1,12 @@
 html,
 body {
-  padding: 0;
+  height: 100%;
   margin: 0;
-  width: 100vw;
-  height: 100vh;
+  padding: 0;
   overflow: hidden; /* Prevent scrollbars from appearing */
   background-color: #222; /* Ensure a consistent background */
+  display: flex;
+  flex-direction: column;
 }
 
 @keyframes red-orange-glow {
@@ -29,4 +30,8 @@ body {
 
 .buttons.overflow-visible {
   overflow: visible !important;
+}
+
+a {
+  color: inherit;
 }

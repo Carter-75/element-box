@@ -19,7 +19,11 @@ const PopupAd = () => {
   }
 
   return (
-    <div className={styles.popup}>
+    <div 
+      className={styles.popup}
+      onMouseDown={(e) => e.stopPropagation()}
+      onMouseUp={(e) => e.stopPropagation()}
+    >
       <div className={styles.popupContent}>
         <button className={styles.closeButton} onClick={() => setVisible(false)}>
           &times;
