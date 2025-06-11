@@ -31,6 +31,7 @@ export const ELEMENT_TYPE = {
   LAVA_SPOUT: 28,
   FIRE_SPOUT: 29,
   SMOKE_SPOUT: 30,
+  FUSE_IGNITING: 31,
 } as const;
 
 export type ElementType = typeof ELEMENT_TYPE[keyof typeof ELEMENT_TYPE];
@@ -68,6 +69,7 @@ export const ELEMENT_COLORS: Record<ElementType, string> = {
     [ELEMENT_TYPE.GEL]: '#b978c7',
     [ELEMENT_TYPE.CLONER]: '#ff00ff',
     [ELEMENT_TYPE.DIAMOND]: '#b9f2ff',
+    [ELEMENT_TYPE.FUSE_IGNITING]: '#8f4f1b',
 };
 
 export const DENSITIES: Record<ElementType, number> = {
@@ -94,6 +96,7 @@ export const DENSITIES: Record<ElementType, number> = {
     [ELEMENT_TYPE.VIRUS]: 10,
     [ELEMENT_TYPE.STONE]: 30,
     [ELEMENT_TYPE.FUSE]: Infinity,
+    [ELEMENT_TYPE.FUSE_IGNITING]: Infinity,
     [ELEMENT_TYPE.DIAMOND]: Infinity,
     [ELEMENT_TYPE.BLACK_HOLE]: Infinity,
     [ELEMENT_TYPE.CLONER]: Infinity,
@@ -108,7 +111,7 @@ const STATIC_SOLIDS = new Set([
     ELEMENT_TYPE.WALL, ELEMENT_TYPE.PLANT, ELEMENT_TYPE.STONE, ELEMENT_TYPE.ICE,
     ELEMENT_TYPE.FUSE, ELEMENT_TYPE.DIAMOND, ELEMENT_TYPE.BLACK_HOLE, ELEMENT_TYPE.CLONER,
     ELEMENT_TYPE.WATER_SPOUT, ELEMENT_TYPE.LAVA_SPOUT, ELEMENT_TYPE.FIRE_SPOUT,
-    ELEMENT_TYPE.SMOKE_SPOUT
+    ELEMENT_TYPE.SMOKE_SPOUT, ELEMENT_TYPE.FUSE_IGNITING,
 ]);
 
 const LAVA_IMMUNE_SOLIDS = new Set([
@@ -646,26 +649,30 @@ export const update = () => {
                         if (i === 0 && j === 0) continue;
                         const neighbor = grid[y+j]?.[x+i];
                         if (neighbor !== undefined && (HEAT_SOURCES.has(neighbor as any) || neighbor === ELEMENT_TYPE.BURNING_FUSE)) {
-                            set(x, y, ELEMENT_TYPE.BURNING_FUSE);
+                            set(x, y, ELEMENT_TYPE.FUSE_IGNITING);
                             return;
                         }
                     }
                 }
                 break;
+            case ELEMENT_TYPE.FUSE_IGNITING:
+                if (Math.random() < 0.15) { // Faster chance to ignite
+                    set(x, y, ELEMENT_TYPE.BURNING_FUSE);
+                }
+                break;
             case ELEMENT_TYPE.BURNING_FUSE:
-                 // Spread to other fuses
+                 // Spread to other fuses as a spark
                 for (let i = -1; i <= 1; i++) {
                     for (let j = -1; j <= 1; j++) {
                         if (i === 0 && j === 0) continue;
                         if(is(x+i, y+j, ELEMENT_TYPE.FUSE)) {
+                            // Turn neighbors directly to BURNING_FUSE for a fast chain reaction
                             set(x+i, y+j, ELEMENT_TYPE.BURNING_FUSE);
                         }
                     }
                 }
-                // Burn out
-                if (Math.random() < 0.05) {
-                    set(x, y, ELEMENT_TYPE.ASH);
-                }
+                // Burn out immediately after spreading
+                set(x, y, ELEMENT_TYPE.ASH);
                 break;
             case ELEMENT_TYPE.NITROGEN:
                 for (let i = -1; i <= 1; i++) {
