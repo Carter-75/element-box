@@ -111,6 +111,12 @@ const STATIC_SOLIDS = new Set([
     ELEMENT_TYPE.SMOKE_SPOUT
 ]);
 
+const LAVA_IMMUNE_SOLIDS = new Set([
+    ELEMENT_TYPE.WALL, ELEMENT_TYPE.DIAMOND,
+    ELEMENT_TYPE.WATER_SPOUT, ELEMENT_TYPE.LAVA_SPOUT,
+    ELEMENT_TYPE.FIRE_SPOUT, ELEMENT_TYPE.SMOKE_SPOUT
+]);
+
 const HEAT_SOURCES = new Set([ELEMENT_TYPE.FIRE, ELEMENT_TYPE.LAVA, ELEMENT_TYPE.HOT_ASH]);
 
 const LOCAL_STORAGE_KEY = 'sandSimulationGrid';
@@ -174,6 +180,9 @@ export const init = (canvasWidth: number, canvasHeight: number, walls: boolean) 
     height = newHeight;
     grid = Array(height).fill(0).map(() => Array(width).fill(ELEMENT_TYPE.EMPTY));
     
+    // Set up walls on the new, empty grid first.
+    setWalls(areWallsOn);
+
     // Determine what to fill the new grid with
     let sourceGrid: ElementType[][] | null = oldGrid;
 
@@ -204,9 +213,10 @@ export const init = (canvasWidth: number, canvasHeight: number, walls: boolean) 
                 const newX = x + startX;
 
                 if (newY >= 0 && newY < newHeight && newX >= 0 && newX < newWidth) {
-                    // Ensure the copied element is valid
-                    if (sourceGrid[y]?.[x] !== undefined) {
-                         grid[newY][newX] = sourceGrid[y][x];
+                    // Ensure the copied element is valid and not a wall
+                    const elementToCopy = sourceGrid[y]?.[x];
+                    if (elementToCopy !== undefined && elementToCopy !== ELEMENT_TYPE.WALL) {
+                         grid[newY][newX] = elementToCopy;
                     }
                 }
             }
@@ -229,7 +239,12 @@ export const setElement = (x: number, y: number, elementType: ElementType, brush
                 const newX = x + i;
                 const newY = y + j;
                 if (newX >= 0 && newX < width && newY >= 0 && newY < height) {
-                    if (grid[newY][newX] === ELEMENT_TYPE.EMPTY || elementType === ELEMENT_TYPE.EMPTY) {
+                    const canPlace =
+                        STATIC_SOLIDS.has(elementType as any) ||
+                        elementType === ELEMENT_TYPE.EMPTY ||
+                        grid[newY][newX] === ELEMENT_TYPE.EMPTY;
+
+                    if (canPlace) {
                         grid[newY][newX] = elementType;
                     }
                 }
@@ -370,43 +385,32 @@ export const update = () => {
         // This code only runs if the particle did not move in the movement phase.
         switch(element) {
             case ELEMENT_TYPE.LAVA:
-                // Check for water interaction first, as it's a specific transformation
+                // Chance to cool down
+                if (Math.random() < 0.001) {
+                    set(x, y, ELEMENT_TYPE.STONE);
+                    return;
+                }
+                // Burn/melt neighbors
                 for (let i = -1; i <= 1; i++) {
                     for (let j = -1; j <= 1; j++) {
                         if (i === 0 && j === 0) continue;
-                        const neighbor = grid[y+j]?.[x+i];
-                        if (neighbor === undefined || neighbor === ELEMENT_TYPE.DIAMOND) continue;
-                        if (is(x + i, y + j, ELEMENT_TYPE.WATER)) {
-                            set(x, y, ELEMENT_TYPE.STONE_ASH); // Lava becomes stone ash
-                            set(x + i, y + j, ELEMENT_TYPE.SMOKE); // Water becomes smoke
-                            return; // End turn
-                        }
-                        if (is(x+i, y+j, ELEMENT_TYPE.NITROGEN)) {
-                            set(x, y, ELEMENT_TYPE.STONE);
-                            set(x+i, y+j, ELEMENT_TYPE.GAS);
-                            return;
-                        }
-                        if (is(x+i, y+j, ELEMENT_TYPE.ICE)) {
-                            set(x,y, ELEMENT_TYPE.STONE_ASH);
-                            set(x+i, y+j, ELEMENT_TYPE.WATER);
-                            return;
-                        }
-                        if (is(x+i, y+j, ELEMENT_TYPE.GUNPOWDER)) {
-                           explode(x+i, y+j, 3);
-                           return;
-                        }
-                        if (is(x+i, y+j, ELEMENT_TYPE.OIL) || is(x+i, y+j, ELEMENT_TYPE.GAS)) {
-                            set(x+i, y+j, ELEMENT_TYPE.FIRE);
-                            return;
-                        }
-                         if (is(x+i, y+j, ELEMENT_TYPE.VIRUS)) {
-                            set(x+i, y+j, ELEMENT_TYPE.SMOKE);
-                            return;
+                        const neighbor = grid[y + j]?.[x + i];
+                        if (neighbor !== undefined && !LAVA_IMMUNE_SOLIDS.has(neighbor as any)) {
+                             if (neighbor === ELEMENT_TYPE.WATER) {
+                                set(x, y, ELEMENT_TYPE.STONE_ASH);
+                                set(x + i, y + j, ELEMENT_TYPE.SMOKE);
+                                return;
+                            } else if (neighbor !== ELEMENT_TYPE.EMPTY && neighbor !== ELEMENT_TYPE.LAVA) {
+                                if (Math.random() < 0.2) {
+                                    set(x + i, y + j, ELEMENT_TYPE.FIRE);
+                                }
+                            }
                         }
                     }
                 }
-                // Fallthrough to general acid/lava interaction if no water is found
+                break;
             case ELEMENT_TYPE.ACID:
+                 // Dissolve neighbors
                 for (let i = -1; i <= 1; i++) {
                     for (let j = -1; j <= 1; j++) {
                         if (i === 0 && j === 0) continue;
@@ -712,24 +716,16 @@ export const update = () => {
                 }
                 break;
             case ELEMENT_TYPE.WATER_SPOUT:
-                if (isEmpty(x, y - 1)) {
-                    set(x, y - 1, ELEMENT_TYPE.WATER);
-                }
+                set(x, y - 1, ELEMENT_TYPE.WATER);
                 break;
              case ELEMENT_TYPE.LAVA_SPOUT:
-                if (isEmpty(x, y - 1)) {
-                    set(x, y - 1, ELEMENT_TYPE.LAVA);
-                }
+                set(x, y - 1, ELEMENT_TYPE.LAVA);
                 break;
              case ELEMENT_TYPE.FIRE_SPOUT:
-                if (isEmpty(x, y - 1)) {
-                    set(x, y - 1, ELEMENT_TYPE.FIRE);
-                }
+                set(x, y - 1, ELEMENT_TYPE.FIRE);
                 break;
              case ELEMENT_TYPE.SMOKE_SPOUT:
-                if (isEmpty(x, y - 1)) {
-                    set(x, y - 1, ELEMENT_TYPE.SMOKE);
-                }
+                set(x, y - 1, ELEMENT_TYPE.SMOKE);
                 break;
              case ELEMENT_TYPE.CLONER:
                  const clonableElements = [ELEMENT_TYPE.SAND, ELEMENT_TYPE.WATER, ELEMENT_TYPE.DIAMOND, ELEMENT_TYPE.OIL, ELEMENT_TYPE.GUNPOWDER];
