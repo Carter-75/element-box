@@ -7,6 +7,9 @@ import PopupAd from './components/ads/PopupAd';
 export const metadata: Metadata = {
   title: 'Falling Sand Simulation',
   description: 'A simple physics simulation game.',
+  other: {
+    'google-adsense-account': 'ca-pub-8347349621527130',
+  },
 };
 
 export default function RootLayout({
