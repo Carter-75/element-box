@@ -20,15 +20,15 @@ const PhysicsCanvas = () => {
         position: { x: window.innerWidth - 100, y: 50 },
         buttonSize: 60,
     });
-    const [selectedElement, setSelectedElement] = useState<world.ElementType>(ELEMENT_TYPE.SAND);
+  const [selectedElement, setSelectedElement] = useState<world.ElementType>(ELEMENT_TYPE.SAND);
     const [brushSize, setBrushSize] = useState(20);
     const [speed, setSpeed] = useState(1);
-    const [wallsOn, setWallsOn] = useState(true);
+  const [wallsOn, setWallsOn] = useState(true);
 
     // --- Refs for Performance & Direct Access ---
     const draggableRef = useRef<HTMLDivElement>(null);
     const menuPanelRef = useRef<HTMLDivElement>(null);
-    const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
     const isMouseDownRef = useRef(false);
     const mousePositionRef = useRef<{ x: number; y: number } | null>(null);
     const lastDrawnPositionRef = useRef<{ x: number; y: number } | null>(null);
@@ -107,9 +107,9 @@ const PhysicsCanvas = () => {
     }, []);
 
     // --- Unified Setup & Resize Effect ---
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
         const setupCanvas = () => {
             world.init(window.innerWidth, window.innerHeight, wallsOnRef.current);
@@ -163,7 +163,7 @@ const PhysicsCanvas = () => {
         let animationFrameId: number;
         
         const renderLoop = () => {
-            const grid = world.getGrid();
+    const grid = world.getGrid();
             if (!grid) {
                 animationFrameId = requestAnimationFrame(renderLoop);
                 return;
@@ -184,12 +184,12 @@ const PhysicsCanvas = () => {
                 lastDrawnPositionRef.current = currentPos;
             }
 
-            const cellSize = world.getCellSize();
+    const cellSize = world.getCellSize();
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            for (let y = 0; y < grid.length; y++) {
-                for (let x = 0; x < grid[y].length; x++) {
-                    const element = grid[y][x];
-                    if (element !== ELEMENT_TYPE.EMPTY) {
+        for (let y = 0; y < grid.length; y++) {
+            for (let x = 0; x < grid[y].length; x++) {
+                const element = grid[y][x];
+                if (element !== ELEMENT_TYPE.EMPTY) {
                         let color = world.ELEMENT_COLORS[element];
 
                         if (element === ELEMENT_TYPE.FIRE) {
@@ -198,13 +198,13 @@ const PhysicsCanvas = () => {
                         
                         if (color) {
                             ctx.fillStyle = color;
-                            ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
-                        }
-                    }
+                    ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
                 }
             }
+        }
+    }
             animationFrameId = requestAnimationFrame(renderLoop);
-        };
+    };
         renderLoop();
 
         return () => cancelAnimationFrame(animationFrameId);
@@ -241,7 +241,7 @@ const PhysicsCanvas = () => {
         window.addEventListener('mousedown', handleMouseDown);
         window.addEventListener('mouseup', handleMouseUp);
         window.addEventListener('mousemove', handleMouseMove);
-        return () => {
+    return () => {
             window.removeEventListener('mousedown', handleMouseDown);
             window.removeEventListener('mouseup', handleMouseUp);
             window.removeEventListener('mousemove', handleMouseMove);
@@ -291,7 +291,7 @@ const PhysicsCanvas = () => {
         }
     }, [isMenuOpen, menuState.position, updateMenuPanelPosition]);
 
-    useEffect(() => {
+  useEffect(() => {
         const handleDragMove = (e: MouseEvent) => {
             if (!isDragging) return;
             const { x: startX, y: startY, initialLeft, initialTop } = dragStartRef.current;
@@ -324,18 +324,18 @@ const PhysicsCanvas = () => {
             const { x: startX, y: startY } = dragStartRef.current;
             if (Math.abs(e.clientX - startX) < 5 && Math.abs(e.clientY - startY) < 5) {
                 setIsMenuOpen(prev => !prev);
-            }
-        };
+      }
+    };
 
         if (isDragging) {
             window.addEventListener('mousemove', handleDragMove);
             window.addEventListener('mouseup', handleDragEnd);
         }
 
-        return () => {
+    return () => {
             window.removeEventListener('mousemove', handleDragMove);
             window.removeEventListener('mouseup', handleDragEnd);
-        };
+    };
     }, [isDragging, menuState.buttonSize, updateMenuPanelPosition]);
 
     // --- Reset Function ---
@@ -364,10 +364,10 @@ const PhysicsCanvas = () => {
     };
 
     // --- Render ---
-    return (
+  return (
         <div style={{ position: 'absolute', top: 0, left: 0, width: '100vw', height: '100vh', overflow: 'hidden' }}>
             <canvas ref={canvasRef} style={{ background: '#222' }} />
-            
+
             <div 
                 ref={draggableRef} 
                 className="physics-menu-container"
@@ -385,11 +385,11 @@ const PhysicsCanvas = () => {
                 <div
                     className="menu-drag-handle"
                     onMouseDown={handleDragStart}
-                    style={{
+        style={{
                         width: '100%',
                         height: '100%',
                         borderRadius: '50%',
-                        backgroundColor: '#282c34',
+          backgroundColor: '#282c34',
                         border: '1px solid rgba(255, 255, 255, 0.2)',
                         display: 'flex',
                         justifyContent: 'center',
@@ -427,8 +427,8 @@ const PhysicsCanvas = () => {
                                     <button className={`button is-small ${selectedElement === ELEMENT_TYPE.STONE_ASH ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.STONE_ASH)}>Stone Ash</button>
                                     <button className={`button is-small ${selectedElement === ELEMENT_TYPE.GUNPOWDER ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.GUNPOWDER)}>Gunpowder</button>
                                      <button className={`button is-small ${selectedElement === ELEMENT_TYPE.ANTIMATTER ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.ANTIMATTER)}>Antimatter</button>
-                                </div>
-                            </div>
+                </div>
+              </div>
                             <div>
                                 <h3 className="title is-6 has-text-white">Liquid</h3>
                                 <div className="buttons overflow-visible">
@@ -438,8 +438,8 @@ const PhysicsCanvas = () => {
                                     <button className={`button is-small ${selectedElement === ELEMENT_TYPE.OIL ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.OIL)}>Oil</button>
                                     <button className={`button is-small ${selectedElement === ELEMENT_TYPE.NITROGEN ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.NITROGEN)}>Nitrogen</button>
                                     <button className={`button is-small ${selectedElement === ELEMENT_TYPE.GEL ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.GEL)}>Gel</button>
-                                </div>
-                            </div>
+                </div>
+              </div>
                             <div>
                                 <h3 className="title is-6 has-text-white">Solid</h3>
                                 <div className="buttons overflow-visible">
@@ -449,8 +449,8 @@ const PhysicsCanvas = () => {
                                     <button className={`button is-small ${selectedElement === ELEMENT_TYPE.ICE ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.ICE)}>Ice</button>
                                     <button className={`button is-small ${selectedElement === ELEMENT_TYPE.FUSE ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.FUSE)}>Fuse</button>
                                     <button className={`button is-small ${selectedElement === ELEMENT_TYPE.DIAMOND ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.DIAMOND)}>Diamond</button>
-                                </div>
-                            </div>
+                </div>
+              </div>
                             <div>
                                 <h3 className="title is-6 has-text-white">Gas</h3>
                                 <div className="buttons overflow-visible">
@@ -458,8 +458,8 @@ const PhysicsCanvas = () => {
                                     <button className={`button is-small ${selectedElement === ELEMENT_TYPE.SMOKE ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.SMOKE)}>Smoke</button>
                                     <button className={`button is-small ${selectedElement === ELEMENT_TYPE.GAS ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.GAS)}>Gas</button>
                                     <button className={`button is-small ${selectedElement === ELEMENT_TYPE.METHANE ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.METHANE)}>Methane</button>
-                                </div>
-                            </div>
+                </div>
+              </div>
                                      <div>
                                         <h3 className="title is-6 has-text-white">Spouts</h3>
                                         <div className="buttons overflow-visible">
@@ -467,8 +467,8 @@ const PhysicsCanvas = () => {
                                             <button className={`button is-small ${selectedElement === ELEMENT_TYPE.LAVA_SPOUT ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.LAVA_SPOUT)}>Lava</button>
                                             <button className={`button is-small ${selectedElement === ELEMENT_TYPE.FIRE_SPOUT ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.FIRE_SPOUT)}>Fire</button>
                                             <button className={`button is-small ${selectedElement === ELEMENT_TYPE.SMOKE_SPOUT ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.SMOKE_SPOUT)}>Smoke</button>
-                                        </div>
-                                    </div>
+            </div>
+          </div>
                                      <div>
                                         <h3 className="title is-6 has-text-white">Special</h3>
                                         <div className="buttons overflow-visible">
@@ -476,40 +476,40 @@ const PhysicsCanvas = () => {
                                              <button className={`button is-small ${selectedElement === ELEMENT_TYPE.BLACK_HOLE ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.BLACK_HOLE)}>Black Hole</button>
                                               <button className={`button is-small ${selectedElement === ELEMENT_TYPE.CLONER ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.CLONER)}>Cloner</button>
                                         </div>
-                                    </div>
-                        </div>
+              </div>
+            </div>
                         {/* Controls */}
                         <div>
-                            <div className="field">
+            <div className="field">
                                 <label className="label is-small has-text-white">Brush Size: {brushSize}</label>
                                 <input className="slider is-fullwidth" type="range" min="1" max="50" value={brushSize} onChange={(e) => setBrushSize(parseInt(e.target.value))} />
-                            </div>
+              </div>
                             <div className="field">
                                 <label className="label is-small has-text-white">Menu Size: {menuState.buttonSize}</label>
                                 <input className="slider is-fullwidth" type="range" min="30" max="80" value={menuState.buttonSize} onChange={(e) => setMenuState(prev => ({...prev, buttonSize: parseInt(e.target.value)}))} />
-                            </div>
-                            <div className="field">
+            </div>
+            <div className="field">
                                 <label className="label is-small has-text-white">Sim Speed: {speed}</label>
                                 <input className="slider is-fullwidth" type="range" min="0" max="10" value={speed} onChange={(e) => setSpeed(parseInt(e.target.value))} />
-                            </div>
-                        </div>
+                </div>
+            </div>
                         {/* Actions */}
-                        <div className="field is-grouped">
-                            <div className="control is-expanded">
+             <div className="field is-grouped">
+                <div className="control is-expanded">
                                 <button className={`button is-danger is-outlined is-fullwidth is-small ${selectedElement === ELEMENT_TYPE.EMPTY ? 'selected-element-glow' : ''}`} onClick={() => setSelectedElement(ELEMENT_TYPE.EMPTY)}>Eraser</button>
                             </div>
                             <div className="control is-expanded">
                                 <button className={`button is-fullwidth is-small ${wallsOn ? 'is-link' : 'is-light'}`} onClick={() => setWallsOn(!wallsOn)}>Walls</button>
-                            </div>
-                            <div className="control is-expanded">
+                </div>
+                <div className="control is-expanded">
                                 <button className="button is-warning is-fullwidth is-small" onClick={handleReset}>Reset</button>
-                            </div>
-                        </div>
+                </div>
+            </div>
                     </div>
                 )}
-            </div>
-        </div>
-    );
+          </div>
+    </div>
+  );
 };
 
-export default PhysicsCanvas;
+export default PhysicsCanvas; 
