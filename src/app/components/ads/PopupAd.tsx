@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from 'react';
 import styles from './PopupAd.module.css';
 
