@@ -29,6 +29,7 @@ const PhysicsCanvas = () => {
     const draggableRef = useRef<HTMLDivElement>(null);
     const menuPanelRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
     const isMouseDownRef = useRef(false);
     const mousePositionRef = useRef<{ x: number; y: number } | null>(null);
     const lastDrawnPositionRef = useRef<{ x: number; y: number } | null>(null);
@@ -109,10 +110,14 @@ const PhysicsCanvas = () => {
     // --- Unified Setup & Resize Effect ---
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
 
         const setupCanvas = () => {
-            world.init(window.innerWidth, window.innerHeight, wallsOnRef.current);
+            const containerWidth = container.clientWidth;
+            const containerHeight = container.clientHeight;
+
+            world.init(containerWidth, containerHeight, wallsOnRef.current);
             
             const worldWidthPx = world.getWidth() * world.getCellSize();
             const worldHeightPx = world.getHeight() * world.getCellSize();
@@ -125,8 +130,8 @@ const PhysicsCanvas = () => {
             setMenuState(prev => ({
                 ...prev,
                 position: {
-                    x: Math.min(prev.position.x, window.innerWidth - prev.buttonSize - 10),
-                    y: Math.min(prev.position.y, window.innerHeight - prev.buttonSize - 10),
+                    x: Math.min(prev.position.x, containerWidth - prev.buttonSize - 10),
+                    y: Math.min(prev.position.y, containerHeight - prev.buttonSize - 10),
                 }
             }));
         };
@@ -135,7 +140,7 @@ const PhysicsCanvas = () => {
 
         window.addEventListener('resize', setupCanvas);
         return () => window.removeEventListener('resize', setupCanvas);
-    }, []); // This now re-initializes the world if walls are toggled.
+    }, [isStateLoaded]);
 
     // --- Drawing Logic ---
     const drawLine = useCallback((x0: number, y0: number, x1: number, y1: number) => {
@@ -210,41 +215,67 @@ const PhysicsCanvas = () => {
         return () => cancelAnimationFrame(animationFrameId);
     }, [speed, drawLine]);
     
-    // --- Mouse Listeners for Drawing ---
+    // --- Mouse & Touch Listeners for Drawing ---
     useEffect(() => {
-        const getMousePos = (e: MouseEvent) => {
+        const getEventPos = (e: MouseEvent | TouchEvent) => {
             const canvas = canvasRef.current;
             if (!canvas) return { x: 0, y: 0 };
             const rect = canvas.getBoundingClientRect();
             const cellSize = world.getCellSize();
+
+            const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+            const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+
             return {
-                x: Math.floor((e.clientX - rect.left) / cellSize),
-                y: Math.floor((e.clientY - rect.top) / cellSize),
+                x: Math.floor((clientX - rect.left) / cellSize),
+                y: Math.floor((clientY - rect.top) / cellSize),
             };
         };
 
-        const handleMouseDown = (e: MouseEvent) => {
+        const handleDown = (e: MouseEvent | TouchEvent) => {
             if ((e.target as HTMLElement).closest('.physics-menu-container')) return;
+            
+            // Prevent page scroll when drawing on mobile
+            if ('touches' in e) {
+                e.preventDefault();
+            }
+
             isMouseDownRef.current = true;
-            mousePositionRef.current = getMousePos(e);
+            mousePositionRef.current = getEventPos(e);
         };
-        const handleMouseUp = () => {
+        const handleUp = () => {
             isMouseDownRef.current = false;
             lastDrawnPositionRef.current = null;
         };
-        const handleMouseMove = (e: MouseEvent) => {
+        const handleMove = (e: MouseEvent | TouchEvent) => {
             if(isMouseDownRef.current) {
-                mousePositionRef.current = getMousePos(e);
+                // Prevent page scroll when drawing on mobile
+                if ('touches' in e) {
+                    e.preventDefault();
+                }
+                mousePositionRef.current = getEventPos(e);
             }
         };
 
-        window.addEventListener('mousedown', handleMouseDown);
-        window.addEventListener('mouseup', handleMouseUp);
-        window.addEventListener('mousemove', handleMouseMove);
-    return () => {
-            window.removeEventListener('mousedown', handleMouseDown);
-            window.removeEventListener('mouseup', handleMouseUp);
-            window.removeEventListener('mousemove', handleMouseMove);
+        const currentCanvas = canvasRef.current;
+
+        // Mouse Events
+        window.addEventListener('mousedown', handleDown);
+        window.addEventListener('mouseup', handleUp);
+        window.addEventListener('mousemove', handleMove);
+        // Touch Events
+        currentCanvas?.addEventListener('touchstart', handleDown, { passive: false });
+        currentCanvas?.addEventListener('touchend', handleUp, { passive: false });
+        currentCanvas?.addEventListener('touchmove', handleMove, { passive: false });
+    
+        return () => {
+            window.removeEventListener('mousedown', handleDown);
+            window.removeEventListener('mouseup', handleUp);
+            window.removeEventListener('mousemove', handleMove);
+
+            currentCanvas?.removeEventListener('touchstart', handleDown);
+            currentCanvas?.removeEventListener('touchend', handleUp);
+            currentCanvas?.removeEventListener('touchmove', handleMove);
         };
     }, []);
 
@@ -365,7 +396,7 @@ const PhysicsCanvas = () => {
 
     // --- Component Render ---
     return (
-        <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', overflow: 'hidden' }}>
+        <div ref={containerRef} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', overflow: 'hidden' }}>
             <canvas 
                 ref={canvasRef} 
                 style={{ 
