@@ -35,3 +35,144 @@ body {
 a {
   color: inherit;
 }
+
+/* Iframe-specific styles for physics simulation embedding */
+.iframe-mode {
+  width: 100vw !important;
+  height: 100vh !important;
+  overflow: hidden !important;
+  position: relative !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.iframe-mode body {
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  height: 100vh !important;
+  width: 100vw !important;
+}
+
+/* Physics simulation frame optimizations */
+.physics-simulation-frame {
+  display: flex !important;
+  flex-direction: column !important;
+  /* Performance optimizations for iframe */
+  will-change: transform;
+  backface-visibility: hidden;
+  /* Ensure proper layering */
+  z-index: 1;
+  /* Remove any interference with physics calculations */
+  transform: translateZ(0);
+}
+
+/* Hide ads when embedded in iframe */
+.iframe-mode .header-ad,
+.iframe-mode .popup-ad,
+.iframe-mode [class*="ad-"],
+.iframe-mode [id*="ad-"] {
+  display: none !important;
+}
+
+/* Ensure canvas and physics elements take full space in iframe */
+.iframe-mode canvas {
+  width: 100vw !important;
+  height: 100vh !important;
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  outline: none !important;
+}
+
+/* Bulma compatibility for iframe mode */
+.iframe-mode .container {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.iframe-mode .section {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.iframe-mode .hero {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Override any Bulma columns in iframe */
+.iframe-mode .columns {
+  margin: 0 !important;
+}
+
+.iframe-mode .column {
+  padding: 0 !important;
+}
+
+/* Physics UI elements positioning in iframe */
+.iframe-mode .physics-controls {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 5px;
+  padding: 10px;
+  max-height: calc(100vh - 20px);
+  overflow-y: auto;
+}
+
+/* Ensure physics buttons work properly in iframe */
+.iframe-mode .physics-controls .button {
+  margin: 2px;
+  font-size: 0.8rem;
+  padding: 0.25rem 0.5rem;
+}
+
+/* Mobile responsiveness in iframe */
+@media (max-width: 768px) {
+  .iframe-mode .physics-controls {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.9);
+    border-radius: 0;
+    max-height: 40vh;
+    z-index: 2000;
+  }
+  
+  .iframe-mode .physics-controls .button {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+  }
+}
+
+/* Performance optimizations for iframe physics */
+.iframe-mode * {
+  box-sizing: border-box;
+}
+
+.iframe-mode .physics-particle,
+.iframe-mode .physics-element {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+}
+
+/* Ensure no scrollbars appear in iframe */
+.iframe-mode,
+.iframe-mode body,
+.iframe-mode html {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+.iframe-mode::-webkit-scrollbar,
+.iframe-mode body::-webkit-scrollbar,
+.iframe-mode html::-webkit-scrollbar {
+  display: none; /* WebKit */
+}
