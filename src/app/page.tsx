@@ -11,15 +11,10 @@ const PhysicsCanvas = dynamic(() => import('@/app/components/PhysicsCanvas'), {
 
 // Wrapper component to use hooks
 function PhysicsCanvasWrapper() {
-  const { isInIframe, onPhysicsEvent, onElementAdded, onSimulationReset } = useIframe();
+  const { isInIframe } = useIframe();
 
-  // Pass iframe context to PhysicsCanvas if needed
-  const canvasProps = {
-    isEmbedded: isInIframe,
-    onElementAdded,
-    onSimulationReset,
-    onPhysicsEvent,
-  };
+  // Note: The PhysicsCanvas component can access iframe context through useIframe hook
+  // if it needs iframe-specific behavior in the future
 
   return (
     <div 
@@ -32,7 +27,7 @@ function PhysicsCanvasWrapper() {
       data-physics-container="true"
       data-embedded={isInIframe}
     >
-      <PhysicsCanvas {...canvasProps} />
+      <PhysicsCanvas />
     </div>
   );
 }
